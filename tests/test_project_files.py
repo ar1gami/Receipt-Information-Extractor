@@ -1,4 +1,4 @@
-"""Checks on the non-code files: requirements, Dockerfile, CI, ignore files, README.
+"""Checks on the non code files: requirements, Dockerfile, CI, ignore files, README.
 
 The Docker image itself cannot be built in the environment these tests were
 written in, so these checks are the next best thing: they catch a COPY of a
@@ -33,7 +33,7 @@ def requirement_lines(name):
     return lines
 
 
-# ---- requirements ----
+# Requirements:
 
 @pytest.mark.parametrize(
     "name",
@@ -50,11 +50,9 @@ def test_requirement_files_parse_and_includes_exist(name):
         else:
             Requirement(line)  # raises InvalidRequirement if malformed
 
-
 def test_runtime_requirements_are_exactly_pinned():
     for line in requirement_lines("requirements.txt"):
         assert re.fullmatch(r"[A-Za-z0-9_.\-]+==[0-9][^\s]*", line), line
-
 
 def test_runtime_requirements_cover_what_the_api_needs():
     names = {Requirement(line).name.lower() for line in requirement_lines("requirements.txt")}
@@ -62,13 +60,12 @@ def test_runtime_requirements_cover_what_the_api_needs():
     assert {"fastapi", "uvicorn", "python-multipart", "pillow", "pytesseract"} <= names
     assert not names & HEAVY
 
-
 def test_vlm_requirements_include_the_model_libraries():
     names = {Requirement(line).name.lower() for line in requirement_lines("requirements-vlm.txt")}
     assert {"torch", "transformers", "peft", "accelerate"} <= names
 
 
-# ---- imports ----
+# Imports:
 
 def module_level_imports(path):
     tree = ast.parse(path.read_text())
@@ -80,12 +77,10 @@ def module_level_imports(path):
             found.add(node.module.split(".")[0])
     return found
 
-
 @pytest.mark.parametrize("folder", ["app", "receipts"])
 def test_heavy_libraries_are_never_imported_at_module_level(folder):
     for path in sorted((ROOT / folder).glob("*.py")):
         assert not module_level_imports(path) & HEAVY, path.name
-
 
 def test_app_imports_with_all_ml_libraries_blocked():
     code = (
@@ -102,11 +97,10 @@ def test_app_imports_with_all_ml_libraries_blocked():
     assert result.stdout.strip() == "ok"
 
 
-# ---- Dockerfile ----
+# Dockerfile:
 
 def dockerfile_lines():
     return [l.strip() for l in read("Dockerfile").splitlines() if l.strip() and not l.strip().startswith("#")]
-
 
 def test_dockerfile_copies_only_paths_that_exist():
     copies = [l for l in dockerfile_lines() if l.upper().startswith("COPY ")]
@@ -116,7 +110,6 @@ def test_dockerfile_copies_only_paths_that_exist():
         for source in parts[:-1]:
             assert (ROOT / source).exists(), f"COPY of missing path: {source}"
 
-
 def test_dockerfile_basics():
     text = read("Dockerfile")
     assert "tesseract-ocr" in text
@@ -124,7 +117,6 @@ def test_dockerfile_basics():
     assert "${PORT}" in text  # Cloud Run supplies the port this way
     assert re.search(r"^USER (?!root)\S+", text, re.M), "the container should not run as root"
     assert "requirements-vlm.txt" in text
-
 
 def test_dockerfile_and_ci_use_the_same_python_minor_version():
     docker = re.search(r"^FROM python:(\d+\.\d+)", read("Dockerfile"), re.M).group(1)
@@ -134,19 +126,17 @@ def test_dockerfile_and_ci_use_the_same_python_minor_version():
             if str(step.get("uses", "")).startswith("actions/setup-python"):
                 assert str(step["with"]["python-version"]) == docker
 
-
 def test_dockerignore_keeps_private_data_out_but_not_the_code():
     ignored = {l.strip() for l in read(".dockerignore").splitlines() if l.strip()}
     assert {"data", "outputs", ".env"} <= ignored
     assert not ignored & {"app", "receipts", "requirements.txt", "requirements-vlm.txt"}
-
 
 def test_gitignore_keeps_data_and_secrets_out():
     ignored = {l.strip() for l in read(".gitignore").splitlines() if l.strip() and not l.startswith("#")}
     assert {"data/", "outputs/", ".env"} <= ignored
 
 
-# ---- CI ----
+# CI:
 
 def test_ci_workflow_is_valid_and_runs_the_tests():
     workflow = yaml.safe_load(read(".github/workflows/tests.yml"))
@@ -164,8 +154,7 @@ def test_ci_workflow_is_valid_and_runs_the_tests():
             assert (ROOT / included).is_file(), f"{name} installs from a missing file: {included}"
 
 
-# ---- README ----
-
+#  Readme File:
 def test_readme_documents_every_script():
     readme = read("README.md")
     for script in sorted((ROOT / "scripts").glob("*.py")):
@@ -178,7 +167,7 @@ def test_readme_exists_and_has_no_leftover_markers():
     assert "TODO" not in text.upper().replace("TO DO", ""), "README.md has a TODO marker"
 
 
-# ---- what git must never take ----
+# What git must never take 
 
 @pytest.mark.skipif(shutil.which("git") is None, reason="needs git")
 def test_git_ignores_data_results_and_the_adapter_but_not_the_code(tmp_path):
@@ -206,10 +195,8 @@ def test_git_ignores_data_results_and_the_adapter_but_not_the_code(tmp_path):
     for path in ("models/README.md", "models/.gitkeep", "app/main.py", "Dockerfile", "deploy/model_card.md"):
         assert not ignored(path), f"{path} would be left out of the repository"
 
-
 def test_gitattributes_keeps_line_endings_as_lf():
     assert "eol=lf" in read(".gitattributes")
-
 
 def test_no_file_in_the_repository_holds_a_personal_email_address_or_phone_number():
     pattern = re.compile(r"[\w.+-]+@(?:gmail|outlook|hotmail|yahoo)\.com|\(\d{3}\) \d{3}-\d{4}")
