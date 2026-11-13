@@ -1,4 +1,4 @@
-"""Prompt and output parsing for the vision-language model."""
+"""Prompt and output parsing for the vision language model."""
 import json
 import re
 from typing import Optional
@@ -11,7 +11,6 @@ PROMPT = (
     "date for date, and the final amount paid for total. Use null for anything "
     "you cannot read."
 )
-
 
 def _balanced_block(text: str, start: int) -> Optional[str]:
     """Return the balanced {...} block starting at text[start], or None.
@@ -41,7 +40,6 @@ def _balanced_block(text: str, start: int) -> Optional[str]:
                 return text[start : i + 1]
     return None
 
-
 def _first_json_dict(text: str) -> Optional[dict]:
     """Try each '{' in order and return the first block that decodes to a dict."""
     start = text.find("{")
@@ -56,7 +54,6 @@ def _first_json_dict(text: str) -> Optional[dict]:
                 return data
         start = text.find("{", start + 1)
     return None
-
 
 def parse_model_output(text: str) -> Optional[dict]:
     """Turn raw model text into a record, or None if no usable JSON was found.
