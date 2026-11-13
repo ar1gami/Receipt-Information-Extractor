@@ -14,10 +14,8 @@ from .vlm_output import parse_model_output
 
 Predictor = Callable[[object], Optional[dict]]
 
-
 def make_ocr_predictor() -> Predictor:
     return ocr_predict
-
 
 def make_vlm_predictor(
     model_id: str,
@@ -28,7 +26,7 @@ def make_vlm_predictor(
     image_longest_edge: Optional[int] = None,
     image_splitting: Optional[bool] = None,
 ) -> Predictor:
-    """Load a vision-language model and return a predict function.
+    """Load a vision language model and return a predict function.
 
     model_id: hub id or local folder (for example the output of merge_adapter.py).
     adapter_path: folder holding LoRA weights from scripts/finetune.py.
@@ -55,10 +53,8 @@ def make_vlm_predictor(
         model = PeftModel.from_pretrained(model, adapter_path)
     return predictor_from_model(processor, model, max_new_tokens)
 
-
 def predictor_from_model(processor, model, max_new_tokens: int = 128) -> Predictor:
     """Wrap a processor and a model that are already loaded as a predictor.
-
     Generation is greedy, so the same model and image always give the same text.
     """
     import torch
