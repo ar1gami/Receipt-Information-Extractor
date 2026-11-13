@@ -1,4 +1,4 @@
-"""LoRA fine-tuning loop for the receipt model.
+"""LoRA fine tuning loop for the receipt model.
 
 Kept apart from scripts/finetune.py so it can be tested with a tiny model.
 torch is imported inside the functions that need it.
@@ -11,7 +11,6 @@ from typing import Callable, List, Optional
 from .data import load_image
 from .training_utils import build_target, mask_prompt_labels
 from .vlm_io import build_messages, move_to
-
 
 def encode_example(processor, image, target: str):
     """Tokenize one example and mask the prompt so the loss covers the answer only.
@@ -40,7 +39,6 @@ def encode_example(processor, image, target: str):
         raise ValueError("the answer produced no tokens")
     return batch, mask_prompt_labels(full_ids, prompt_len)
 
-
 def prompt_lengths(processor, rows: List[dict], base_dir, n: int = 5) -> List[int]:
     """Token count of the prompt (image tokens included) for the first n rows.
 
@@ -53,7 +51,6 @@ def prompt_lengths(processor, rows: List[dict], base_dir, n: int = 5) -> List[in
         image = load_image(Path(base_dir), row)
         lengths.append(int(processor(text=prompt, images=[image], return_tensors="pt")["input_ids"].shape[1]))
     return lengths
-
 
 def freeze_vision(model) -> int:
     """Turn off training for every parameter of the image encoder. Returns how many were frozen.
@@ -71,7 +68,6 @@ def freeze_vision(model) -> int:
         raise ValueError("found no trainable image encoder parameters to freeze (no parameter name contains 'vision')")
     return frozen
 
-
 def example_loss(model, processor, row: dict, base_dir: Path, device):
     import torch
 
@@ -81,10 +77,9 @@ def example_loss(model, processor, row: dict, base_dir: Path, device):
     inputs["labels"] = torch.tensor([labels], device=device)
     return model(**inputs).loss
 
-
 def accumulation_sizes(n_examples: int, grad_accum: int) -> List[int]:
     """Size of the accumulation group each example belongs to, in order.
-
+    
     The last group is smaller when n_examples is not a multiple of grad_accum,
     and its loss is divided by its real size, not by grad_accum.
     """
@@ -93,7 +88,6 @@ def accumulation_sizes(n_examples: int, grad_accum: int) -> List[int]:
         size = min(grad_accum, n_examples - start)
         sizes.extend([size] * size)
     return sizes
-
 
 def train(
     model,
