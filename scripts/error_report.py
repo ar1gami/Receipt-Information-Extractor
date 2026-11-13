@@ -2,7 +2,7 @@
 
 Step 1, after running evaluate.py with --out:
     python scripts/error_report.py make data/test.jsonl reports/tuned.json --out reports/errors_tuned.csv
-
+    
 Step 2: open the CSV, look at each image, and type a short category in the
 category column (for example: blurry, rotated, two totals, faded, unusual layout).
 
@@ -23,7 +23,6 @@ from receipts.error_analysis import (  # noqa: E402
     summarize_categories,
     write_sheet,
 )
-
 
 def main(argv=None):
     parser = argparse.ArgumentParser(description=__doc__, formatter_class=argparse.RawTextHelpFormatter)
@@ -50,7 +49,6 @@ def main(argv=None):
     text = format_summary(summarize_categories(args.sheet))
     print(text)
     return text
-
 
 if __name__ == "__main__":
     main()
