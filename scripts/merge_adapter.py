@@ -19,7 +19,6 @@ sys.path.insert(0, str(Path(__file__).resolve().parent.parent))
 
 from receipts.vlm_io import DTYPE_NAMES, add_image_args, image_options_from_args  # noqa: E402
 
-
 def main(argv=None):
     p = argparse.ArgumentParser(description=__doc__, formatter_class=argparse.RawTextHelpFormatter)
     p.add_argument("--model-id", required=True)
@@ -45,7 +44,6 @@ def main(argv=None):
     processor.save_pretrained(out)
     print(f"saved merged model to {out}")
     return out
-
 
 if __name__ == "__main__":
     main()
