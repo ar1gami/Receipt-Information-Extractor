@@ -20,7 +20,6 @@ sys.path.insert(0, str(Path(__file__).resolve().parent.parent))
 from receipts.data import load_jsonl, write_jsonl  # noqa: E402
 from receipts.training_utils import split_rows  # noqa: E402
 
-
 def split_file(path, test_fraction=0.2, seed=0, force=False):
     path = Path(path)
     train_path = path.parent / "train.jsonl"
@@ -35,7 +34,6 @@ def split_file(path, test_fraction=0.2, seed=0, force=False):
     write_jsonl(test_path, test)
     return train_path, test_path, len(train), len(test)
 
-
 def main(argv=None):
     parser = argparse.ArgumentParser(description=__doc__, formatter_class=argparse.RawTextHelpFormatter)
     parser.add_argument("jsonl")
@@ -49,7 +47,6 @@ def main(argv=None):
     print(f"{train_path}: {n_train} receipts")
     print(f"{test_path}: {n_test} receipts")
     return n_train, n_test
-
 
 if __name__ == "__main__":
     main()
