@@ -2,8 +2,7 @@
 
     python scripts/prepare_sroie.py --images path/to/images --labels path/to/key_labels --out data/sroie
 
-Check the dataset's terms of use yourself before publishing any of its images.
-Keep the data folder out of git (it is listed in .gitignore).
+data folder is out of git (it is listed in .gitignore), to respect terms of use.
 """
 import argparse
 import sys
@@ -12,7 +11,6 @@ from pathlib import Path
 sys.path.insert(0, str(Path(__file__).resolve().parent.parent))
 
 from receipts.sroie import convert_sroie  # noqa: E402
-
 
 def main(argv=None):
     parser = argparse.ArgumentParser(description=__doc__, formatter_class=argparse.RawTextHelpFormatter)
@@ -25,7 +23,6 @@ def main(argv=None):
         print(f"{key}: {value}")
     print(f"wrote {Path(args.out) / 'data.jsonl'}")
     return summary
-
 
 if __name__ == "__main__":
     main()
