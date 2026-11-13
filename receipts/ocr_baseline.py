@@ -1,10 +1,9 @@
-"""Baseline: Tesseract OCR followed by hand-written extraction rules.
+"""Baseline: Tesseract OCR followed by hand written extraction rules.
 
-This is the thing the fine-tuned vision-language model has to beat.
+This is the model the fine tuned VLM has to beat.
 """
 import re
 from typing import Dict, Optional
-
 from .normalize import normalize_date
 
 _AMOUNT = r"\d{1,3}(?:[,\s]\d{3})*[.,]\d{2}|\d+[.,]\d{2}"
@@ -35,18 +34,14 @@ _STRONG_TOTAL = re.compile(
     re.IGNORECASE,
 )
 
-
 def _clean_amount(text: str) -> str:
     return re.sub(r"\s", "", text)
-
 
 def _as_float(a: str) -> float:
     return float(a.replace(",", "."))
 
-
 _ROUNDING = re.compile(r"round", re.IGNORECASE)
 _TOTAL_WORD = re.compile(r"\btotal\b", re.IGNORECASE)
-
 
 def find_total(text: str) -> Optional[str]:
     """Pick the receipt total.
@@ -103,18 +98,16 @@ def find_total(text: str) -> Optional[str]:
     pool = repeated or amounts
     return max(pool, key=_as_float)
 
-
 def _fix_digit_letters(text: str) -> str:
-    """OCR often reads a zero as the letter O at the start of a date part."""
+    """OCR often reads a zero as a letter O at the start of a date part."""
     text = re.sub(r"(?<![A-Za-z0-9])[Oo](?=\d[-/.]\d)", "0", text)
     return re.sub(r"(?<=\d[-/.])[Oo](?=\d)", "0", text)
-
 
 def find_date(text: str) -> Optional[str]:
     """Return the first date in the text that is a real calendar date.
 
-    Strings that look like dates but are not (month 62, year 2078) are
-    skipped, since they are almost always OCR mistakes or other numbers. If
+    Strings that look like dates but aren't (month 62, year 2078) are
+    skipped, since they are usually OCR mistakes or other numbers. If
     no real date is found, the first date shaped string is returned instead.
     """
     text = _fix_digit_letters(text)
@@ -154,7 +147,6 @@ _NOT_VENDOR = re.compile(
 _REG_NUMBER = re.compile(r"\s*[\(\[]\s*\d[\w\- ]{3,}\s*[\)\]]?\s*$")
 _VENDOR_SCAN_LINES = 10
 
-
 def _clean_vendor(line: str) -> str:
     line = _REG_NUMBER.sub("", line.strip())
     line = re.sub(r"^[^A-Za-z0-9(]+", "", line)
@@ -171,8 +163,7 @@ def _clean_vendor(line: str) -> str:
     while len(tokens) > 1 and len(tokens[-1].strip(".,")) <= 2 and tokens[-1].upper() not in keep:
         tokens.pop()
     return " ".join(tokens).strip(" |_-.,:;~")
-
-
+    
 def _vendor_score(line: str, index: int) -> float:
     letters = re.findall(r"[A-Za-z]", line)
     visible = re.sub(r"\s", "", line)
@@ -194,7 +185,6 @@ def _vendor_score(line: str, index: int) -> float:
     if len(line) > 45:
         score -= 1.0
     return score - 0.15 * index
-
 
 def find_vendor(text: str) -> Optional[str]:
     """Pick the store name from the top of the receipt.
@@ -229,14 +219,12 @@ def find_vendor(text: str) -> Optional[str]:
             return line
     return None
 
-
 def extract_fields_from_text(text: str) -> Dict[str, Optional[str]]:
     return {
         "vendor": find_vendor(text),
         "date": find_date(text),
         "total": find_total(text),
     }
-
 
 def ocr_predict(image) -> Dict[str, Optional[str]]:
     """Run Tesseract on a PIL image and extract the three fields."""
@@ -245,6 +233,5 @@ def ocr_predict(image) -> Dict[str, Optional[str]]:
     text = pytesseract.image_to_string(image, config="--psm 6")
     ocr_predict.last_text = text
     return extract_fields_from_text(text)
-
 
 ocr_predict.last_text = None
