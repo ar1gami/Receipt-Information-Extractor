@@ -19,13 +19,11 @@ from receipts.sroie import convert_sroie
 
 ROOT = Path(__file__).resolve().parent.parent
 
-
 def load_script(name):
     spec = importlib.util.spec_from_file_location(name, ROOT / "scripts" / f"{name}.py")
     module = importlib.util.module_from_spec(spec)
     spec.loader.exec_module(module)
     return module
-
 
 def make_fake_sroie(tmp_path):
     images = tmp_path / "img"
@@ -62,7 +60,7 @@ def make_fake_sroie(tmp_path):
     return images, labels
 
 
-# ---- SROIE converter ----
+# SROIE Converter:
 
 def test_convert_sroie_counts_and_content(tmp_path):
     images, labels = make_fake_sroie(tmp_path)
@@ -86,7 +84,6 @@ def test_convert_sroie_counts_and_content(tmp_path):
     for r in rows:
         assert (out / r["image"]).is_file()
 
-
 def test_converted_dataset_loads_and_scores_with_day_first(tmp_path):
     images, labels = make_fake_sroie(tmp_path)
     out = tmp_path / "out"
@@ -101,19 +98,17 @@ def test_converted_dataset_loads_and_scores_with_day_first(tmp_path):
     day_first = evaluate(preds, truths, day_first=True)
     assert day_first["field_accuracy"]["date"] == 1.0
     assert day_first["field_accuracy"]["total"] == 1.0  # "RM9.00" is read as 9.00
-    # 14/03/2015 can only be day-first, so it parses either way. 05/03/2015 is
-    # ambiguous, and read month-first it becomes 5 May, which is not 5 March.
+    # 14/03/2015 can only be day first, so it parses either way. 05/03/2015 is
+    # ambiguous, and read month first it becomes 5 May, which is not 5 March.
     month_first = evaluate(preds, truths, day_first=False)
     assert month_first["field_accuracy"]["date"] == pytest.approx(2 / 3)
     assert month_first["failed_indices"]["date"] == [2]
-
 
 def test_convert_sroie_missing_folders(tmp_path):
     with pytest.raises(FileNotFoundError, match="image folder"):
         convert_sroie(tmp_path / "nope", tmp_path, tmp_path / "o")
     with pytest.raises(FileNotFoundError, match="label folder"):
         convert_sroie(tmp_path, tmp_path / "nope", tmp_path / "o")
-
 
 def test_convert_sroie_nothing_converted_raises(tmp_path):
     images = tmp_path / "i"
@@ -124,7 +119,6 @@ def test_convert_sroie_nothing_converted_raises(tmp_path):
     with pytest.raises(ValueError, match="nothing converted"):
         convert_sroie(images, labels, tmp_path / "o")
 
-
 def test_prepare_sroie_cli(tmp_path, capsys):
     images, labels = make_fake_sroie(tmp_path)
     script = load_script("prepare_sroie")
@@ -133,13 +127,11 @@ def test_prepare_sroie_cli(tmp_path, capsys):
     printed = capsys.readouterr().out
     assert "converted: 3" in printed and "data.jsonl" in printed
 
-
-# ---- split ----
+# Split:
 
 def build_synthetic(tmp_path, n=20):
     make_synthetic = load_script("make_synthetic")
     return make_synthetic.build(tmp_path / "ds", n, start_seed=40)
-
 
 def test_split_creates_disjoint_files_next_to_input(tmp_path):
     split = load_script("split_dataset")
@@ -154,7 +146,6 @@ def test_split_creates_disjoint_files_next_to_input(tmp_path):
     # Image paths still resolve from the new files.
     assert len(load_dataset(test_path)) == 5
 
-
 def test_split_is_reproducible_and_refuses_to_overwrite(tmp_path):
     split = load_script("split_dataset")
     jsonl = build_synthetic(tmp_path)
@@ -168,7 +159,6 @@ def test_split_is_reproducible_and_refuses_to_overwrite(tmp_path):
     split.split_file(jsonl, 0.25, seed=4, force=True)
     assert test_path.read_text() != first
 
-
 def test_split_cli(tmp_path, capsys):
     split = load_script("split_dataset")
     jsonl = build_synthetic(tmp_path, n=10)
@@ -177,7 +167,7 @@ def test_split_cli(tmp_path, capsys):
     assert "test.jsonl: 3 receipts" in capsys.readouterr().out
 
 
-# ---- error analysis ----
+# Error Analysis:
 
 ROWS = [
     {"image": "images/0.png", "vendor": "A", "date": "2026-01-01", "total": "1.00"},
@@ -185,7 +175,6 @@ ROWS = [
     {"image": "images/2.png", "vendor": "C", "date": "2026-01-03", "total": "3.00"},
     {"image": "images/3.png", "vendor": "D", "date": "2026-01-04", "total": "4.00"},
 ]
-
 
 def make_report():
     preds = [
@@ -196,7 +185,6 @@ def make_report():
     ]
     truths = [{k: r[k] for k in ("vendor", "date", "total")} for r in ROWS]
     return {"metrics": evaluate(preds, truths), "predictions": preds}
-
 
 def test_error_rows_cover_every_failure():
     rows = build_error_rows(ROWS, make_report(), limit=None)
@@ -210,7 +198,6 @@ def test_error_rows_cover_every_failure():
     assert by_pair[(2, "total")]["prediction"] == NO_OUTPUT
     assert by_pair[(3, "date")]["image"] == "images/3.png"
     assert all(r["category"] == "" for r in rows)
-
 
 def test_error_rows_limit_is_seeded_sample_of_real_failures():
     report = make_report()
@@ -229,21 +216,17 @@ def test_error_rows_limit_is_seeded_sample_of_real_failures():
     }
     assert len(samples) > 1
 
-
 def test_error_rows_limit_larger_than_failures_returns_all():
     assert len(build_error_rows(ROWS, make_report(), limit=100)) == 6
-
 
 def test_error_rows_length_mismatch():
     with pytest.raises(ValueError, match="predictions"):
         build_error_rows(ROWS[:2], make_report())
 
-
 def test_no_failures_gives_empty_sheet():
     truths = [{k: r[k] for k in ("vendor", "date", "total")} for r in ROWS]
     perfect = {"metrics": evaluate([dict(t) for t in truths], truths), "predictions": [dict(t) for t in truths]}
     assert build_error_rows(ROWS, perfect) == []
-
 
 def test_sheet_round_trip_and_summary(tmp_path):
     sheet = tmp_path / "errors.csv"
@@ -262,7 +245,6 @@ def test_sheet_round_trip_and_summary(tmp_path):
     assert "vendor (2 failures)" in text and "total (2 failures)" in text
     assert text.index("vendor (") < text.index("date (") < text.index("total (")
 
-
 def test_error_report_cli_round_trip(tmp_path, capsys):
     script = load_script("error_report")
     dataset = tmp_path / "test.jsonl"
@@ -272,7 +254,7 @@ def test_error_report_cli_round_trip(tmp_path, capsys):
     sheet = tmp_path / "sheet.csv"
     made = script.main(["make", str(dataset), str(report), "--out", str(sheet), "--limit", "50"])
     assert len(made) == 6
-    # Fill in the category column as a person would.
+    # Fill in the category column 
     with sheet.open(newline="", encoding="utf-8") as f:
         rows = list(csv.DictReader(f))
     for r in rows:
