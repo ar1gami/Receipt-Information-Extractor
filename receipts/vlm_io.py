@@ -1,4 +1,4 @@
-"""Shared model loading and input preparation for the vision-language model.
+"""Shared model loading and input preparation for the vision language model.
 
 Everything that imports torch or transformers does so inside a function, so the
 rest of the project (and its tests) works on a machine without them.
@@ -8,9 +8,8 @@ from typing import Optional
 from .vlm_output import PROMPT
 
 DTYPE_NAMES = ("auto", "bfloat16", "float16", "float32")
-# 8bit and 4bit use bitsandbytes and need a CUDA GPU. dynamic-int8 runs on CPU.
+# 8bit and 4bit use bitsandbytes and need a CUDA GPU. dynamic int8 runs on CPU.
 QUANT_NAMES = (None, "8bit", "4bit", "dynamic-int8")
-
 
 def build_messages(target: Optional[str] = None) -> list:
     """Chat messages for one receipt. With a target, the answer turn is included."""
@@ -20,7 +19,6 @@ def build_messages(target: Optional[str] = None) -> list:
     if target is not None:
         messages.append({"role": "assistant", "content": [{"type": "text", "text": target}]})
     return messages
-
 
 def auto_model_class():
     """The image-plus-text auto class, under whichever name this version of transformers uses."""
@@ -34,7 +32,6 @@ def auto_model_class():
         "this version of transformers has neither AutoModelForImageTextToText "
         "nor AutoModelForVision2Seq"
     )
-
 
 def resolve_dtype(name: str):
     """Turn a dtype name into a torch dtype. "auto" picks the best the hardware supports."""
@@ -51,14 +48,12 @@ def resolve_dtype(name: str):
         return torch.float32
     return getattr(torch, name)
 
-
 def _from_pretrained(cls, model_id, torch_dtype, **kwargs):
     # Newer transformers calls the argument dtype, older ones torch_dtype.
     try:
         return cls.from_pretrained(model_id, dtype=torch_dtype, **kwargs)
     except TypeError:
         return cls.from_pretrained(model_id, torch_dtype=torch_dtype, **kwargs)
-
 
 def _image_processor(processor):
     """The image processor if it is SmolVLM style (Idefics3), otherwise None."""
@@ -67,13 +62,12 @@ def _image_processor(processor):
         return image_processor
     return None
 
-
 def apply_image_options(processor, longest_edge: Optional[int] = None, splitting: Optional[bool] = None):
     """Set how much of each image the model sees. Returns the processor.
 
     SmolVLM style models resize an image so its longest side is longest_edge
     pixels, cut it into square tiles (512 pixels for SmolVLM) and add one
-    small whole-image view. Every tile costs 64 tokens and a pass through the
+    small whole image view. Every tile costs 64 tokens and a pass through the
     image encoder, so a large longest_edge uses a lot of memory and time. A
     smaller one is cheaper but makes small print harder to read.
     splitting=False skips the tiles and keeps only the small whole-image view,
@@ -114,7 +108,6 @@ def image_settings(processor) -> Optional[dict]:
         "splitting": bool(image_processor.do_image_splitting),
     }
 
-
 def add_image_args(parser):
     """The two command line flags every script that loads a model shares."""
     parser.add_argument(
@@ -127,11 +120,9 @@ def add_image_args(parser):
         help="SmolVLM style models only: do not cut the image into tiles (too coarse for receipts)",
     )
 
-
 def image_options_from_args(args):
     """(longest_edge, splitting) from parsed arguments. splitting is None when not changed."""
     return args.image_longest_edge, (False if args.no_image_splitting else None)
-
 
 def image_options_from_env(environ):
     """(longest_edge, splitting) from IMAGE_LONGEST_EDGE and IMAGE_SPLITTING ("on" or "off")."""
@@ -144,7 +135,6 @@ def image_options_from_env(environ):
     if flag not in ("", "on", "off"):
         raise RuntimeError(f"IMAGE_SPLITTING must be on or off, got {flag!r}")
     return longest, (None if not flag else flag == "on")
-
 
 def adapter_image_options(adapter_path, longest_edge=None, splitting=None):
     """Fill in image options from the adapter's training run when none were given.
@@ -166,7 +156,6 @@ def adapter_image_options(adapter_path, longest_edge=None, splitting=None):
     except (OSError, ValueError):
         return longest_edge, splitting
     return config.get("image_longest_edge"), (False if config.get("no_image_splitting") else None)
-
 
 def load_model(
     model_id: str,
@@ -214,7 +203,6 @@ def load_model(
         model = model.to("cuda" if torch.cuda.is_available() else "cpu")
     return processor, model
 
-
 def quantize_int8_cpu(model):
     """Dynamic int8 quantization of the linear layers, for CPU. Returns (model, backend name).
 
@@ -250,7 +238,6 @@ def quantize_int8_cpu(model):
         "--quantization 8bit on a CUDA GPU."
     )
 
-
 def move_to(batch, device, dtype):
     """Move processor output to a device. Floating point tensors (the pixel
     values) are also cast to the model's dtype, so a bfloat16 model does not
@@ -264,7 +251,6 @@ def move_to(batch, device, dtype):
         else:
             out[key] = value
     return out
-
 
 def model_size_mb(model) -> float:
     """Size of the model weights in megabytes, measured by saving the state dict.
