@@ -1,4 +1,4 @@
-"""LoRA fine-tuning of a vision-language model for receipt extraction.
+"""LoRA fine tuning of a vision language model for receipt extraction.
 
 Run this on a GPU (Colab, Kaggle or similar), not on a laptop CPU.
 
@@ -6,7 +6,7 @@ Run this on a GPU (Colab, Kaggle or similar), not on a laptop CPU.
     python scripts/finetune.py data/train.jsonl --model-id <hub id> \
         --output outputs/lora --epochs 2 --wandb
 
-Use a training file that does NOT contain your test receipts. A validation
+Use a training file that does NOT contain already existing test receipts. A validation
 split is carved out of the training file automatically and the test set is
 never read here.
 
@@ -26,7 +26,6 @@ sys.path.insert(0, str(Path(__file__).resolve().parent.parent))
 from receipts.data import load_jsonl  # noqa: E402
 from receipts.training_utils import split_rows  # noqa: E402
 from receipts.vlm_io import DTYPE_NAMES, add_image_args, image_options_from_args, image_settings  # noqa: E402
-
 
 def parse_args(argv=None):
     p = argparse.ArgumentParser(description=__doc__, formatter_class=argparse.RawTextHelpFormatter)
@@ -50,7 +49,6 @@ def parse_args(argv=None):
     p.add_argument("--seed", type=int, default=0)
     p.add_argument("--wandb", action="store_true")
     return p.parse_args(argv)
-
 
 def main(argv=None):
     args = parse_args(argv)
@@ -133,7 +131,6 @@ def main(argv=None):
     if run:
         run.finish()
     return history
-
 
 if __name__ == "__main__":
     main()
