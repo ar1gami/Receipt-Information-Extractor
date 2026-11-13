@@ -1,4 +1,4 @@
-"""Build a tiny, randomly initialized vision-language model and processor offline.
+"""Build a tiny, randomly initialized vision language model and processor offline.
 
 This is not a useful model. It exists so the real Transformers and PEFT code
 paths (loading, chat templates, LoRA training, saving, merging, generating) can
@@ -22,7 +22,6 @@ CHAT_TEMPLATE = (
 )
 
 SPECIALS = ["<pad>", "<unk>", "<s>", "</s>", "<image>"]
-
 
 def build_toy_vlm(folder, seed: int = 0, init_std: float = 0.25) -> Path:
     """Write the tiny model and processor into folder and return it.
@@ -112,7 +111,6 @@ def build_toy_vlm(folder, seed: int = 0, init_std: float = 0.25) -> Path:
     processor.save_pretrained(folder)
     return folder
 
-
 # SmolVLM style chat template (Idefics3 family): "User:<image>text<end_of_utterance>\nAssistant: answer<end_of_utterance>\n"
 IDEFICS3_CHAT_TEMPLATE = (
     "<|im_start|>{% for message in messages %}{{message['role'] | capitalize}}"
@@ -121,7 +119,6 @@ IDEFICS3_CHAT_TEMPLATE = (
     "{% elif line['type'] == 'image' %}{{ '<image>' }}{% endif %}{% endfor %}"
     "<end_of_utterance>\n{% endfor %}{% if add_generation_prompt %}{{ 'Assistant:' }}{% endif %}"
 )
-
 
 def build_toy_idefics3(folder, seed: int = 0, init_std: float = 0.25, vision_hidden: int = 32) -> Path:
     """A tiny random model built from the same classes as SmolVLM (Idefics3).
@@ -167,7 +164,7 @@ def build_toy_idefics3(folder, seed: int = 0, init_std: float = 0.25, vision_hid
     tokenizer.add_special_tokens(
         {"additional_special_tokens": ["<fake_token_around_image>", "<image>", "<end_of_utterance>", "<global-img>", "<|im_start|>"] + row_cols}
     )
-
+    
     torch.manual_seed(seed)
     vision = Idefics3VisionConfig(
         hidden_size=vision_hidden,
