@@ -4,9 +4,9 @@ Configuration through environment variables:
     PREDICTOR     "ocr" (default) or "vlm"
     MODEL_ID      Hugging Face model id (vlm only)
     ADAPTER_PATH  folder with LoRA weights (vlm only, optional). It must be a folder on this
-                  machine holding adapter_config.json, not a hub id, because the image size
-                  settings of the training run are read from the folder next to it.
-    QUANTIZATION  "8bit", "4bit" or "dynamic-int8" (vlm only, optional)
+                  machine holding adapter_config.json, not a hub id, as the image size
+                  settings of our training run are read from the folder next to it.
+    QUANTIZATION  "8bit", "4bit" or "dynamic int8" (vlm only, optional)
     DTYPE         "auto" (default), "bfloat16", "float16" or "float32" (vlm only)
     IMAGE_LONGEST_EDGE  pixels for the longest image side, SmolVLM style models (optional)
     IMAGE_SPLITTING     "on" or "off", SmolVLM style models (optional)
@@ -27,14 +27,12 @@ from pydantic import BaseModel
 from receipts.predictors import make_ocr_predictor, make_vlm_predictor
 from receipts.vlm_io import image_options_from_env
 
-
 class ExtractionResult(BaseModel):
     vendor: Optional[str] = None
     date: Optional[str] = None
     total: Optional[str] = None
     predictor: str
     latency_ms: float
-
 
 def predictor_from_env() -> tuple:
     name = os.environ.get("PREDICTOR", "ocr").lower()
@@ -48,7 +46,7 @@ def predictor_from_env() -> tuple:
         adapter_path = os.environ.get("ADAPTER_PATH") or None
         if adapter_path and not (Path(adapter_path) / "adapter_config.json").is_file():
             # Without this check a wrong path would be treated as a hub id by PEFT, which gives a
-            # confusing error at best, and the adapter's image settings would be skipped at worst.
+            # error at best, or the adapter's image settings would be skipped at worst.
             raise RuntimeError(
                 f"ADAPTER_PATH={adapter_path!r} is not an adapter folder (no adapter_config.json in it). "
                 "It must be a folder on this machine. In Docker, put the adapter in models/lora before "
@@ -73,7 +71,7 @@ def create_app(predictor: Optional[Callable] = None, predictor_name: str = "cust
 
     @asynccontextmanager
     async def lifespan(_app: FastAPI):
-        # The model is loaded once here, not on every request.
+        # The model is loaded once here
         if predictor is not None:
             state["predict"], state["name"] = predictor, predictor_name
         else:
@@ -87,8 +85,8 @@ def create_app(predictor: Optional[Callable] = None, predictor_name: str = "cust
     def health():
         return {"status": "ok", "predictor": state.get("name")}
 
-    # A plain def endpoint runs in FastAPI's thread pool, so slow model calls
-    # do not block the event loop.
+    # A def endpoint runs in FastAPI's thread pool, so slow model calls
+    # don't  block event loop.
     @app.post("/extract", response_model=ExtractionResult)
     def extract(file: UploadFile = File(...)):
         data = file.file.read(max_bytes + 1)
@@ -122,6 +120,4 @@ def create_app(predictor: Optional[Callable] = None, predictor_name: str = "cust
         )
 
     return app
-
-
 app = create_app()
