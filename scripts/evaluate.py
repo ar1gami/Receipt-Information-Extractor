@@ -1,4 +1,4 @@
-"""Evaluate a predictor on a JSONL dataset and print per-field accuracy.
+"""Evaluate a predictor on a JSONL dataset and print per field accuracy.
 
 Examples:
     python scripts/evaluate.py data/test.jsonl --predictor ocr
@@ -31,7 +31,6 @@ def run(predict, dataset, day_first=False):
         preds.append(predict(image))
         raws.append(getattr(predict, "last_text", None))
     return preds, evaluate(preds, truths, day_first=day_first), raws
-
 
 def main(argv=None):
     parser = argparse.ArgumentParser(description=__doc__, formatter_class=argparse.RawTextHelpFormatter)
@@ -99,7 +98,7 @@ def main(argv=None):
             Path(args.out).parent.mkdir(parents=True, exist_ok=True)
             Path(args.out).write_text(json.dumps(report, indent=2))
 
-    # Save the scores before timing, so stopping the slow timing step keeps them.
+    # Save scores before timing, so stopping the slow timing step keeps them.
     save()
     if args.latency:
         images = [img for img, _ in dataset][: args.latency_images]
@@ -116,7 +115,6 @@ def main(argv=None):
             )
             save()
     return report
-
 
 if __name__ == "__main__":
     main()
