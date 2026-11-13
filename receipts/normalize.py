@@ -31,7 +31,7 @@ _DAY_FIRST = ("%d/%m/%Y", "%d-%m-%Y", "%d.%m.%Y", "%d/%m/%y", "%d-%m-%y", "%d.%m
 
 def normalize_total(value) -> Optional[str]:
     """Return the amount as a string with two decimals, or None if unparseable.
-
+    
     Handles currency symbols, thousands separators and a decimal comma.
     """
     if value is None:
@@ -59,13 +59,12 @@ def normalize_total(value) -> Optional[str]:
     except ValueError:
         return None
 
-
 def normalize_date(value, day_first: bool = False) -> Optional[str]:
     """Return an ISO date (YYYY-MM-DD), or None if unparseable.
 
     Numeric dates like 12/10/2026 are ambiguous. By default they are read
-    month-first (North American). Pass day_first=True for datasets that use
-    day-first dates. If only one reading is a valid date (25/10/2026), that
+    month first (in North American). Pass day_first=True for datasets that use
+    day first dates. If only one reading is a valid date (25/10/2026), that
     reading is used either way.
     """
     if value is None:
@@ -82,7 +81,6 @@ def normalize_date(value, day_first: bool = False) -> Optional[str]:
             continue
     return None
 
-
 def normalize_vendor(value) -> Optional[str]:
     """Lowercase, strip punctuation and collapse whitespace."""
     if value is None:
@@ -90,7 +88,6 @@ def normalize_vendor(value) -> Optional[str]:
     text = re.sub(r"[^a-z0-9 ]", " ", str(value).lower())
     text = re.sub(r"\s+", " ", text).strip()
     return text or None
-
 
 def normalize_record(record: dict, day_first: bool = False) -> dict:
     """Normalize every field of a record. Missing fields become None."""
