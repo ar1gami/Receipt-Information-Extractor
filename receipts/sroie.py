@@ -20,7 +20,6 @@ KEY_MAP = {"company": "vendor", "date": "date", "total": "total"}
 IMAGE_SUFFIXES = (".jpg", ".jpeg", ".png")
 LABEL_SUFFIXES = (".txt", ".json")
 
-
 def _index_images(images_dir: Path) -> Dict[str, Path]:
     """Map lowercase file name to the real path, so X002.JPG is found as X002.jpg.
 
@@ -29,14 +28,12 @@ def _index_images(images_dir: Path) -> Dict[str, Path]:
     """
     return {p.name.lower(): p for p in images_dir.iterdir() if p.is_file()}
 
-
 def _find_image(index: Dict[str, Path], stem: str):
     for suffix in IMAGE_SUFFIXES:
         found = index.get(f"{stem}{suffix}".lower())
         if found is not None:
             return found
     return None
-
 
 def convert_sroie(images_dir, labels_dir, out_dir) -> Dict[str, int]:
     """Copy matched images into out_dir/images and write out_dir/data.jsonl.
