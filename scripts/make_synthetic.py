@@ -10,7 +10,6 @@ sys.path.insert(0, str(Path(__file__).resolve().parent.parent))
 from receipts.data import write_jsonl  # noqa: E402
 from receipts.synth import make_dataset  # noqa: E402
 
-
 def build(out_dir, n: int, start_seed: int = 0, date_style: str = "iso") -> Path:
     out_dir = Path(out_dir)
     (out_dir / "images").mkdir(parents=True, exist_ok=True)
@@ -22,7 +21,6 @@ def build(out_dir, n: int, start_seed: int = 0, date_style: str = "iso") -> Path
     jsonl = out_dir / "data.jsonl"
     write_jsonl(jsonl, rows)
     return jsonl
-
 
 if __name__ == "__main__":
     out = sys.argv[1] if len(sys.argv) > 1 else "data/synthetic"
