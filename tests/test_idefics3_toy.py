@@ -1,7 +1,7 @@
 """Checks of the SmolVLM code path on a tiny random model of the same classes.
 
 SmolVLM is built from the Idefics3 classes. It cuts each image into square
-tiles, adds a whole-image view, and expands every tile into a run of image
+tiles, adds a whole image view, and expands every tile into a run of image
 tokens, so one receipt becomes hundreds of tokens. tests/toy_vlm.py builds a
 small random model with that structure. These tests run the project's real
 code on it, offline and on CPU: the chat template, prompt masking, the image
@@ -56,18 +56,15 @@ TRAIN_ROWS = 4
 VAL_FRACTION = 0.25
 TRAIN_EDGE = 128  # differs from the toy's default of 64, so adoption can be told apart
 
-
 def load_script(name):
     spec = importlib.util.spec_from_file_location(name, ROOT / "scripts" / f"{name}.py")
     module = importlib.util.module_from_spec(spec)
     spec.loader.exec_module(module)
     return module
 
-
 @pytest.fixture(scope="session")
 def toy3_dir(tmp_path_factory):
     return build_toy_idefics3(tmp_path_factory.mktemp("toy_idefics3"))
-
 
 @pytest.fixture(scope="session")
 def dataset_dir(tmp_path_factory):
@@ -80,7 +77,6 @@ def dataset_dir(tmp_path_factory):
         rows.append({"image": f"images/{name}.png", **truth})
     write_jsonl(folder / "data.jsonl", rows)
     return folder
-
 
 def finetune_args(toy3_dir, dataset_dir, out_dir, *extra, epochs=300, lr=2e-3):
     return [
@@ -98,7 +94,6 @@ def finetune_args(toy3_dir, dataset_dir, out_dir, *extra, epochs=300, lr=2e-3):
         *extra,
     ]
 
-
 @pytest.fixture(scope="session")
 def adapter_dir(toy3_dir, dataset_dir, tmp_path_factory):
     out = tmp_path_factory.mktemp("adapter3") / "lora"
@@ -107,16 +102,13 @@ def adapter_dir(toy3_dir, dataset_dir, tmp_path_factory):
     )
     return out
 
-
 def seen_rows(dataset_dir):
     rows = load_jsonl(dataset_dir / "data.jsonl")[:TRAIN_ROWS]
     train_rows, _ = split_rows(rows, VAL_FRACTION, seed=0)
     return train_rows
 
-
 def tall_image():
     return Image.new("RGB", (40, 200), (250, 10, 10))
-
 
 def n_image_tokens(processor, image):
     prompt = processor.apply_chat_template(
@@ -129,13 +121,11 @@ def n_image_tokens(processor, image):
     return int((batch["input_ids"] == image_id).sum()), int(batch["pixel_values"].shape[1])
 
 
-# ---- loading, templates and masking on the Idefics3 classes ----
-
+# Loading, templates and masking on the Idefics3 classes
 def test_toy_is_built_from_the_smolvlm_classes(toy3_dir):
     processor, model = load_model(str(toy3_dir), "float32")
     assert type(model).__name__ == "Idefics3ForConditionalGeneration"
     assert type(processor).__name__ == "Idefics3Processor"
-
 
 def test_chat_template_follows_the_smolvlm_layout(toy3_dir):
     processor, _ = load_model(str(toy3_dir), "float32")
@@ -148,13 +138,11 @@ def test_chat_template_follows_the_smolvlm_layout(toy3_dir):
     assert full.startswith(prompt)  # the property the masking relies on
     assert full.rstrip().endswith("<end_of_utterance>")
 
-
 def test_each_tile_becomes_a_run_of_image_tokens(toy3_dir):
     processor, _ = load_model(str(toy3_dir), "float32")
     tokens, tiles = n_image_tokens(processor, tall_image())
     assert tiles >= 2
     assert tokens == IMAGE_TOKENS_PER_TILE * tiles
-
 
 def test_encode_example_masks_prompt_and_image_tokens(toy3_dir, dataset_dir):
     processor, _ = load_model(str(toy3_dir), "float32")
@@ -177,7 +165,7 @@ def test_encode_example_masks_prompt_and_image_tokens(toy3_dir, dataset_dir):
     assert "pixel_attention_mask" in batch  # passed on to the model with the pixels
 
 
-# ---- image size options ----
+#  Image size options:
 
 def test_lower_longest_edge_means_fewer_image_tokens(toy3_dir):
     counts = {}
@@ -186,20 +174,17 @@ def test_lower_longest_edge_means_fewer_image_tokens(toy3_dir):
         counts[edge] = n_image_tokens(processor, tall_image())[0]
     assert counts[32] < counts[64] < counts[128] < counts[256]
 
-
 def test_no_splitting_keeps_only_the_whole_image_view(toy3_dir):
     processor, _ = load_model(str(toy3_dir), "float32", image_splitting=False)
     tokens, tiles = n_image_tokens(processor, tall_image())
     assert tiles == 1
     assert tokens == IMAGE_TOKENS_PER_TILE
 
-
 def test_image_settings_report_what_was_applied(toy3_dir):
     processor, _ = load_model(str(toy3_dir), "float32")
     assert image_settings(processor) == {"longest_edge": 64, "tile_size": 32, "splitting": True}
     apply_image_options(processor, 160, False)
     assert image_settings(processor) == {"longest_edge": 160, "tile_size": 32, "splitting": False}
-
 
 def test_options_left_unset_change_nothing(toy3_dir):
     processor, _ = load_model(str(toy3_dir), "float32")
@@ -212,13 +197,11 @@ def test_options_left_unset_change_nothing(toy3_dir):
     apply_image_options(processor, splitting=False)
     assert image_settings(processor)["longest_edge"] == 96
 
-
 @pytest.mark.parametrize("bad", [0, -5])
 def test_non_positive_longest_edge_is_rejected(toy3_dir, bad):
     processor, _ = load_model(str(toy3_dir), "float32")
     with pytest.raises(ValueError, match="at least 1"):
         apply_image_options(processor, longest_edge=bad)
-
 
 def test_options_on_a_model_without_tiles_give_a_clear_error(tmp_path):
     llava_dir = build_toy_vlm(tmp_path / "llava")
@@ -231,7 +214,6 @@ def test_options_on_a_model_without_tiles_give_a_clear_error(tmp_path):
     # asking for nothing is always fine
     assert load_model(str(llava_dir), "float32")[0] is not None
 
-
 def test_settings_survive_saving_and_reloading_the_processor(toy3_dir, tmp_path):
     processor, _ = load_model(str(toy3_dir), "float32", image_longest_edge=96)
     processor.save_pretrained(tmp_path / "saved")
@@ -241,7 +223,6 @@ def test_settings_survive_saving_and_reloading_the_processor(toy3_dir, tmp_path)
     assert image_settings(reloaded)["longest_edge"] == 96
     image = tall_image()
     assert n_image_tokens(reloaded, image) == n_image_tokens(processor, image)
-
 
 def test_prompt_lengths_shrink_with_the_image_size(toy3_dir, dataset_dir):
     rows = load_jsonl(dataset_dir / "data.jsonl")
@@ -253,7 +234,7 @@ def test_prompt_lengths_shrink_with_the_image_size(toy3_dir, dataset_dir):
     assert all(a > b for a, b in zip(long_lengths, short_lengths))
 
 
-# ---- reading the options from the environment and from a training run ----
+#  Reading the options from the environment and from a training run 
 
 def test_environment_options():
     assert image_options_from_env({}) == (None, None)
@@ -282,7 +263,7 @@ def test_adapter_without_a_usable_run_config_gives_no_options(tmp_path):
     assert adapter_image_options(tmp_path) == (None, None)
 
 
-# ---- training on the Idefics3 classes ----
+#  training on the Idefics3 classes: 
 
 def test_finetune_learns_and_records_the_image_size(adapter_dir):
     config = json.loads((adapter_dir / "run_config.json").read_text())
@@ -296,7 +277,6 @@ def test_finetune_learns_and_records_the_image_size(adapter_dir):
 
     assert image_settings(AutoProcessor.from_pretrained(adapter_dir))["longest_edge"] == TRAIN_EDGE
 
-
 def test_predictor_with_adapter_uses_the_training_image_size(toy3_dir, adapter_dir):
     from receipts.predictors import make_vlm_predictor
 
@@ -306,7 +286,6 @@ def test_predictor_with_adapter_uses_the_training_image_size(toy3_dir, adapter_d
     assert explicit.image_settings["longest_edge"] == 64
     plain = make_vlm_predictor(str(toy3_dir), dtype="float32")
     assert plain.image_settings["longest_edge"] == 64  # nothing to adopt without an adapter
-
 
 def test_adapter_reloaded_by_evaluate_reproduces_training_answers(toy3_dir, dataset_dir, adapter_dir, tmp_path):
     evaluate = load_script("evaluate")
@@ -330,7 +309,6 @@ def test_adapter_reloaded_by_evaluate_reproduces_training_answers(toy3_dir, data
     assert json.loads(out.read_text())["image_settings"]["longest_edge"] == TRAIN_EDGE
     assert report["latency"]["n_calls"] == 3
 
-
 def test_mismatched_image_size_is_visible_in_the_report(toy3_dir, dataset_dir, adapter_dir, tmp_path):
     """Forcing another size works, and the report says which size was used."""
     evaluate = load_script("evaluate")
@@ -347,14 +325,12 @@ def test_mismatched_image_size_is_visible_in_the_report(toy3_dir, dataset_dir, a
     )
     assert report["image_settings"]["longest_edge"] == 32
 
-
 def test_untrained_model_scores_badly_so_the_metric_can_tell_the_difference(toy3_dir, dataset_dir):
     evaluate = load_script("evaluate")
     report = evaluate.main(
         [str(dataset_dir / "data.jsonl"), "--predictor", "vlm", "--model-id", str(toy3_dir), "--dtype", "float32"]
     )
     assert report["metrics"]["all_fields_accuracy"] == 0.0
-
 
 def test_merge_keeps_the_training_image_size_and_the_answers(toy3_dir, dataset_dir, adapter_dir, tmp_path):
     from receipts.predictors import make_vlm_predictor
@@ -371,7 +347,6 @@ def test_merge_keeps_the_training_image_size_and_the_answers(toy3_dir, dataset_d
         with_adapter(image), standalone(image)
         assert with_adapter.last_text == standalone.last_text
 
-
 def test_dynamic_int8_runs_on_the_merged_idefics3_model(toy3_dir, dataset_dir, adapter_dir, tmp_path):
     from receipts.predictors import make_vlm_predictor
 
@@ -386,8 +361,7 @@ def test_dynamic_int8_runs_on_the_merged_idefics3_model(toy3_dir, dataset_dir, a
     quant(image)
     assert isinstance(quant.last_text, str) and quant.last_text.strip()
 
-
-# ---- memory savers ----
+#  Memory savers 
 
 def test_freeze_vision_leaves_only_language_lora_weights_trainable(toy3_dir):
     from peft import LoraConfig, get_peft_model
@@ -402,7 +376,6 @@ def test_freeze_vision_leaves_only_language_lora_weights_trainable(toy3_dir):
     assert trainable_after and not any("vision" in n.lower() for n in trainable_after)
     assert all("lora" in n for n in trainable_after)
 
-
 def test_freeze_vision_errors_when_there_is_nothing_to_freeze(tmp_path):
     from peft import LoraConfig, get_peft_model
 
@@ -414,7 +387,6 @@ def test_freeze_vision_errors_when_there_is_nothing_to_freeze(tmp_path):
     with pytest.raises(ValueError, match="no trainable image encoder"):
         freeze_vision(model)  # a second call finds nothing left
 
-
 @pytest.mark.parametrize("flags", [["--freeze-vision"], ["--gradient-checkpointing"], ["--freeze-vision", "--gradient-checkpointing"]])
 def test_memory_saving_flags_still_train(toy3_dir, dataset_dir, tmp_path, flags):
     history = load_script("finetune").main(
@@ -423,7 +395,6 @@ def test_memory_saving_flags_still_train(toy3_dir, dataset_dir, tmp_path, flags)
     losses = [h["train_loss"] for h in history if "train_loss" in h]
     assert all(torch.isfinite(torch.tensor(v)) for v in losses)
     assert losses[-1] < 0.5 * losses[0]
-
 
 def test_frozen_vision_weights_do_not_change_during_training(toy3_dir, dataset_dir, tmp_path):
     """The image encoder still gets (inactive) LoRA layers, but training must not move them.
@@ -442,7 +413,6 @@ def test_frozen_vision_weights_do_not_change_during_training(toy3_dir, dataset_d
     assert vision and language
     assert all(float(t.abs().max()) == 0.0 for t in vision.values()), "image encoder LoRA weights were trained"
     assert any(float(t.abs().max()) > 0.0 for t in language.values()), "language model LoRA weights did not train"
-
 
 def test_without_the_flag_the_image_encoder_does_train(toy3_dir, dataset_dir, tmp_path):
     """The check above only means something if the same measurement sees movement without the flag."""
@@ -467,7 +437,6 @@ def test_without_the_flag_the_image_encoder_does_train(toy3_dir, dataset_dir, tm
 def wide_toy_dir(tmp_path_factory):
     return build_toy_idefics3(tmp_path_factory.mktemp("toy_idefics3_wide"), vision_hidden=64)
 
-
 def bitsandbytes_works(mode, folder):
     try:
         from transformers import BitsAndBytesConfig, LlamaConfig, LlamaForCausalLM
@@ -487,14 +456,12 @@ def bitsandbytes_works(mode, folder):
     except Exception:
         return False
 
-
 @pytest.fixture(scope="session", params=["8bit", "4bit"])
 def bnb_mode(request, tmp_path_factory):
     pytest.importorskip("bitsandbytes")
     if not bitsandbytes_works(request.param, tmp_path_factory.mktemp(f"probe_{request.param}")):
         pytest.skip(f"bitsandbytes cannot run {request.param} quantization on this machine")
     return request.param
-
 
 def test_bitsandbytes_model_loads_generates_and_is_smaller(wide_toy_dir, dataset_dir, bnb_mode):
     from receipts.predictors import make_vlm_predictor
@@ -506,7 +473,6 @@ def test_bitsandbytes_model_loads_generates_and_is_smaller(wide_toy_dir, dataset
     assert isinstance(quant.last_text, str)
     assert quant.size_mb is not None and quant.size_mb < full.size_mb
     assert quant.image_settings == full.image_settings
-
 
 def test_merged_model_is_evaluated_quantized_by_the_script(wide_toy_dir, dataset_dir, tmp_path, bnb_mode):
     """The exact steps the Kaggle notebook runs: train, merge, then evaluate the merged folder quantized."""
