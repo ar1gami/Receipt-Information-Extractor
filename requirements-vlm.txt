@@ -1,0 +1,12 @@
+# Model libraries for fine-tuning and serving a vision-language model.
+#
+# transformers, peft and accelerate are pinned to the versions the tiny-model
+# tests were run against. PyTorch is not pinned, because the right build
+# depends on the machine (CPU or a CUDA version), and Colab and Kaggle already
+# have one installed. torchvision is listed because the image processors in
+# transformers 5 ask for it.
+torch
+torchvision
+transformers==5.21.0
+peft==0.21.2
+accelerate==1.15.0

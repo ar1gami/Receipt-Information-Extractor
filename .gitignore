@@ -1,0 +1,25 @@
+# Data and results. Receipts can hold personal details, and dataset images
+# often have terms of use, so none of it belongs in the repository.
+data/
+outputs/
+reports/
+*.safetensors
+*.pt
+
+# Model weights. The adapter from the Kaggle run goes in models/lora (see models/README.md).
+models/*
+!models/.gitkeep
+!models/README.md
+
+# Secrets
+.env
+
+# Python
+__pycache__/
+*.pyc
+.pytest_cache/
+.venv/
+venv/
+
+# Weights & Biases
+wandb/

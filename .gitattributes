@@ -1,0 +1,3 @@
+# Keep line endings as LF on every machine. A Dockerfile or shell script with
+# Windows line endings can fail inside a Linux container.
+* text=auto eol=lf
