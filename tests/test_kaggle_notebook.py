@@ -24,22 +24,18 @@ import pytest
 ROOT = Path(__file__).resolve().parent.parent
 NOTEBOOK = ROOT / "notebooks" / "kaggle_finetune.ipynb"
 
-
 def cells():
     return json.loads(NOTEBOOK.read_text())["cells"]
 
-
 def code_sources():
     return ["".join(c["source"]) for c in cells() if c["cell_type"] == "code"]
-
 
 def cell_containing(text):
     matches = [src for src in code_sources() if text in src]
     assert len(matches) == 1, f"expected exactly one code cell containing {text!r}, found {len(matches)}"
     return matches[0]
 
-
-# ---- static checks ----
+#  Static checks:
 
 def test_notebook_is_a_valid_notebook_and_every_code_cell_compiles():
     data = json.loads(NOTEBOOK.read_text())
@@ -52,7 +48,6 @@ def test_notebook_is_a_valid_notebook_and_every_code_cell_compiles():
             assert cell["outputs"] == [] and cell["execution_count"] is None  # saved clean
             ast.parse("".join(cell["source"]))
 
-
 def test_saved_with_the_safe_first_run_settings():
     settings = cell_containing("def setting")
     assert 'DO_CHECKS = setting("DO_CHECKS", True)' in settings
@@ -61,13 +56,11 @@ def test_saved_with_the_safe_first_run_settings():
     assert 'REQUIRE_GPU = setting("REQUIRE_GPU", True)' in settings
     assert 'INSTALL = setting("INSTALL", True)' in settings
 
-
 def test_scripts_the_notebook_calls_exist():
     names = set(re.findall(r"scripts/([a-z_]+\.py)", "\n".join(code_sources())))
     assert {"evaluate.py", "finetune.py", "merge_adapter.py", "prepare_sroie.py", "compare.py"} <= names
     for name in names:
         assert (ROOT / "scripts" / name).is_file(), name
-
 
 def test_every_command_line_flag_in_the_notebook_is_defined_somewhere_in_the_project():
     flags = set(re.findall(r'"(--[a-z][a-z0-9-]*)"', "\n".join(code_sources())))
@@ -78,12 +71,11 @@ def test_every_command_line_flag_in_the_notebook_is_defined_somewhere_in_the_pro
     missing = sorted(f for f in flags if f != "--root-user-action" and f'"{f}"' not in defined)
     assert not missing, f"flags the notebook passes that no script defines: {missing}"
 
-
 def test_notebook_has_no_dashes_that_read_like_ai_text():
     assert "\u2014" not in NOTEBOOK.read_text()
 
 
-# ---- running the notebook's own code on a fake Kaggle ----
+# Running the notebook's own code on a fake Kaggle to test
 
 def make_fake_kaggle(base, n_train, n_test, code_as_zip=False):
     """Create input and working folders shaped like Kaggle's, return (input, working)."""
@@ -123,7 +115,6 @@ def make_fake_kaggle(base, n_train, n_test, code_as_zip=False):
         shutil.rmtree(code)
     return kaggle_input, kaggle_working
 
-
 def run_cells(tmp_path, sources, env_extra, timeout=900):
     script = tmp_path / "notebook_cells.py"
     script.write_text("\n\n".join(sources))
@@ -133,8 +124,7 @@ def run_cells(tmp_path, sources, env_extra, timeout=900):
     )
     assert result.returncode == 0, f"notebook code failed:\n{result.stdout[-3000:]}\n{result.stderr[-3000:]}"
     return result.stdout
-
-
+    
 def test_notebook_finds_the_code_inside_a_zip_and_leaves_the_data_folder_out(tmp_path):
     kaggle_input, kaggle_working = make_fake_kaggle(tmp_path, 2, 1, code_as_zip=True)
     out = run_cells(
@@ -148,7 +138,6 @@ def test_notebook_finds_the_code_inside_a_zip_and_leaves_the_data_folder_out(tmp
     assert not (project / "data").exists()
     assert "project code:" in out
 
-
 def test_notebook_stops_with_a_clear_message_when_no_code_is_attached(tmp_path):
     (tmp_path / "input").mkdir()
     (tmp_path / "working").mkdir()
@@ -158,7 +147,6 @@ def test_notebook_stops_with_a_clear_message_when_no_code_is_attached(tmp_path):
     result = subprocess.run([sys.executable, str(script)], env=env, capture_output=True, text=True, timeout=120)
     assert result.returncode != 0
     assert "Attach the dataset that holds the project zip" in result.stderr
-
 
 def bitsandbytes_runs_8bit(folder):
     try:
@@ -177,7 +165,6 @@ def bitsandbytes_runs_8bit(folder):
         return True
     except Exception:
         return False
-
 
 def test_whole_notebook_runs_on_a_fake_kaggle_with_a_tiny_model(tmp_path):
     pytest.importorskip("torch")
