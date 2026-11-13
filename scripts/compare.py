@@ -13,7 +13,6 @@ from pathlib import Path
 
 HEADER = ["model", "vendor", "date", "total", "all fields", "parse fail", "median ms", "p95 ms", "size MB"]
 
-
 def row_for(label: str, report: dict) -> list:
     m = report["metrics"]
     acc = m["field_accuracy"]
@@ -30,7 +29,6 @@ def row_for(label: str, report: dict) -> list:
         f"{report['model_size_mb']:.0f}" if report.get("model_size_mb") else "",
     ]
 
-
 def render(rows: list) -> str:
     table = [HEADER] + rows
     widths = [max(len(r[i]) for r in table) for i in range(len(HEADER))]
@@ -41,7 +39,6 @@ def render(rows: list) -> str:
             lines.append("  ".join("-" * w for w in widths))
     return "\n".join(lines)
 
-
 def parse_pairs(args: list) -> list:
     pairs = []
     for arg in args:
@@ -50,7 +47,6 @@ def parse_pairs(args: list) -> list:
         label, path = arg.split("=", 1)
         pairs.append((label, Path(path)))
     return pairs
-
 
 def main(argv=None) -> str:
     argv = sys.argv[1:] if argv is None else argv
@@ -62,7 +58,6 @@ def main(argv=None) -> str:
     text = render(rows)
     print(text)
     return text
-
 
 if __name__ == "__main__":
     main()
