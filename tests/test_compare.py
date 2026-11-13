@@ -6,13 +6,11 @@ import pytest
 
 ROOT = Path(__file__).resolve().parent.parent
 
-
 def load_compare():
     spec = importlib.util.spec_from_file_location("compare", ROOT / "scripts" / "compare.py")
     module = importlib.util.module_from_spec(spec)
     spec.loader.exec_module(module)
     return module
-
 
 def report(vendor, date, total, all_fields, parse_fail, latency=None, size_mb=None):
     r = {
@@ -27,7 +25,6 @@ def report(vendor, date, total, all_fields, parse_fail, latency=None, size_mb=No
     if size_mb is not None:
         r["model_size_mb"] = size_mb
     return r
-
 
 def test_table_values_and_blank_latency(tmp_path):
     compare = load_compare()
@@ -46,7 +43,6 @@ def test_table_values_and_blank_latency(tmp_path):
     assert lines[2].split() == ["ocr", "50.0%", "75.0%", "25.0%", "10.0%", "0.0%"]
     assert lines[3].split() == ["tuned", "90.0%", "95.0%", "85.0%", "80.0%", "5.0%", "123", "201", "512"]
 
-
 def test_rows_keep_given_order(tmp_path):
     compare = load_compare()
     paths = []
@@ -57,18 +53,15 @@ def test_rows_keep_given_order(tmp_path):
     text = compare.main(list(reversed(paths)))
     assert [l.split()[0] for l in text.splitlines()[2:]] == ["z", "y", "x"]
 
-
 def test_bad_argument_rejected():
     compare = load_compare()
     with pytest.raises(ValueError, match="label=path"):
         compare.parse_pairs(["no-equals-sign"])
 
-
 def test_no_arguments_exits():
     compare = load_compare()
     with pytest.raises(SystemExit):
         compare.main([])
-
 
 def test_works_on_a_real_evaluate_report(tmp_path):
     spec = importlib.util.spec_from_file_location("evaluate", ROOT / "scripts" / "evaluate.py")
