@@ -1,7 +1,7 @@
 """Turn an evaluation report into a sheet for sorting failures by hand.
 
-The useful part of error analysis is reading the failures yourself and naming
-the patterns (blurry photo, crumpled paper, two totals on one receipt, and so
+The useful part of error analysis is reading failures yourself and naming
+their causes (blurry photo, crumpled paper, two totals on one receipt, and so
 on). This module only builds the sheet and counts what you wrote.
 """
 import csv
@@ -9,12 +9,10 @@ import random
 from collections import Counter
 from pathlib import Path
 from typing import Dict, List
-
 from .normalize import FIELDS
 
 COLUMNS = ["index", "image", "field", "truth", "prediction", "category"]
 NO_OUTPUT = "(no usable output)"
-
 
 def build_error_rows(rows: List[dict], report: Dict, limit: int = 50, seed: int = 0) -> List[dict]:
     """One row per failed (receipt, field) pair, at most `limit` of them.
@@ -33,7 +31,6 @@ def build_error_rows(rows: List[dict], report: Dict, limit: int = 50, seed: int 
     pairs.sort()
     if limit is not None and len(pairs) > limit:
         pairs = sorted(random.Random(seed).sample(pairs, limit))
-
     out = []
     for i, field in pairs:
         pred = predictions[i]
@@ -49,13 +46,11 @@ def build_error_rows(rows: List[dict], report: Dict, limit: int = 50, seed: int 
         )
     return out
 
-
 def write_sheet(path, error_rows: List[dict]) -> None:
     with Path(path).open("w", newline="", encoding="utf-8") as f:
         writer = csv.DictWriter(f, fieldnames=COLUMNS)
         writer.writeheader()
         writer.writerows(error_rows)
-
 
 def summarize_categories(path) -> Dict[str, Counter]:
     """Count the categories you filled in, per field. Blank categories are reported too."""
@@ -65,7 +60,6 @@ def summarize_categories(path) -> Dict[str, Counter]:
             label = (row.get("category") or "").strip().lower() or "(unlabeled)"
             counts.setdefault(row["field"], Counter())[label] += 1
     return counts
-
 
 def format_summary(counts: Dict[str, Counter]) -> str:
     lines = []
