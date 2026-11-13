@@ -1,19 +1,17 @@
-"""Per-field evaluation of receipt extraction."""
+"""Per field evaluation of receipt extraction."""
 from typing import Dict, List, Optional
-
 from .normalize import FIELDS, normalize_record
-
 
 def evaluate(
     predictions: List[Optional[dict]], truths: List[dict], day_first: bool = False
 ) -> Dict:
     """Compare predictions to ground truth.
 
-    A prediction of None means the model produced no usable output (for
-    example, invalid JSON). It counts as wrong for every field and is also
+    A prediction of None means the model produced no usable output (ex. an invalid JSON).
+    It counts as wrong for every field and is also
     reported separately as a parse failure.
 
-    Returns a dict with per-field exact-match accuracy, the share of receipts
+    Returns a dict with per field exact match accuracy, the share of receipts
     where every field was correct, the parse failure rate, and the indices of
     receipts that were wrong (for error analysis).
     """
@@ -56,7 +54,6 @@ def evaluate(
         "parse_failure_rate": parse_failures / n,
         "failed_indices": failures,
     }
-
 
 def format_table(name: str, result: Dict) -> str:
     """Plain text summary suitable for the README."""
