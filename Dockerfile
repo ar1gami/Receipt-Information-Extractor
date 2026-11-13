@@ -4,12 +4,12 @@
 #      docker build -t receipt-extractor .
 #      docker run --rm -p 8080:8080 receipt-extractor
 #
-# 2. The fine-tuned vision-language model, on a CPU. First put the LoRA adapter
+# 2. The fine tuned vision-language model, on a CPU. First put the LoRA adapter
 #    folder from the Kaggle run (the one holding adapter_config.json) in
 #    models/lora. Then:
 #      docker build --build-arg VARIANT=vlm -t receipt-extractor-vlm .
 #      docker run --rm -p 8080:8080 receipt-extractor-vlm
-#    This image installs CPU-only PyTorch and downloads the base model from the
+#    This image installs CPU only PyTorch and downloads the base model from the
 #    Hugging Face hub when the container starts.
 #
 # 3. The same as 2, with the base model downloaded while building:
@@ -52,7 +52,7 @@ RUN apt-get update \
 WORKDIR /srv
 
 COPY requirements.txt requirements-vlm.txt ./
-# CPU-only PyTorch is installed first, from the PyTorch CPU index, so that pip
+# CPU only PyTorch is installed first, from the PyTorch CPU index, so that pip
 # cannot pick the much larger CUDA build from PyPI. The last check makes the
 # build fail if a CUDA build got in anyway.
 RUN case "$VARIANT" in ocr|vlm) ;; *) echo "VARIANT must be ocr or vlm, got $VARIANT" >&2; exit 1;; esac \
@@ -64,7 +64,7 @@ RUN case "$VARIANT" in ocr|vlm) ;; *) echo "VARIANT must be ocr or vlm, got $VAR
          && pip install -r requirements-vlm.txt \
          && python -c "import torch; assert torch.version.cuda is None, 'a CUDA build of PyTorch was installed'"; \
        fi
-
+       
 COPY receipts ./receipts
 COPY app ./app
 COPY models ./models
