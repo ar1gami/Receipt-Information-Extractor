@@ -9,9 +9,7 @@ from pathlib import Path
 from typing import List, Tuple
 
 from PIL import Image
-
 from .normalize import FIELDS
-
 
 def load_jsonl(path) -> List[dict]:
     path = Path(path)
@@ -32,14 +30,11 @@ def load_jsonl(path) -> List[dict]:
         raise ValueError(f"{path} contains no rows")
     return rows
 
-
 def truth_of(row: dict) -> dict:
     return {f: row.get(f) for f in FIELDS}
 
-
 def load_image(base: Path, row: dict) -> Image.Image:
     return Image.open(base / row["image"]).convert("RGB")
-
 
 def load_dataset(path, limit=None) -> List[Tuple[Image.Image, dict]]:
     """Load (image, truth) pairs. With limit, only the first `limit` receipts are read."""
@@ -51,7 +46,6 @@ def load_dataset(path, limit=None) -> List[Tuple[Image.Image, dict]]:
             raise ValueError("limit must be at least 1")
         rows = rows[:limit]
     return [(load_image(base, row), truth_of(row)) for row in rows]
-
 
 def write_jsonl(path, rows: List[dict]) -> None:
     with Path(path).open("w", encoding="utf-8") as f:
