@@ -19,13 +19,11 @@ ITEMS = ["Milk", "Bread", "Coffee", "Notebook", "Batteries", "Soap", "Apples", "
 
 _FONT_PATH = "/usr/share/fonts/truetype/liberation/LiberationMono-Regular.ttf"
 
-
 def _font(size: int):
     try:
         return ImageFont.truetype(_FONT_PATH, size)
     except OSError:
         return ImageFont.load_default(size=size)
-
 
 def make_receipt(seed: int, date_style: str = "iso") -> Tuple[Image.Image, dict]:
     """Return (image, truth) for one synthetic receipt."""
@@ -62,7 +60,6 @@ def make_receipt(seed: int, date_style: str = "iso") -> Tuple[Image.Image, dict]
 
     truth = {"vendor": vendor, "date": date_text, "total": f"{total:.2f}"}
     return image, truth
-
 
 def make_dataset(n: int, start_seed: int = 0, date_style: str = "iso") -> List[Tuple[Image.Image, dict]]:
     return [make_receipt(start_seed + i, date_style) for i in range(n)]
