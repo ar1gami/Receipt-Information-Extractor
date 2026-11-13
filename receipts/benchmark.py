@@ -3,9 +3,8 @@ import statistics
 import time
 from typing import Callable, Dict, List
 
-
 def percentile(values: List[float], q: float) -> float:
-    """Linear-interpolated percentile, q in [0, 100]."""
+    """Linear interpolated percentile, q w/range [0, 100]."""
     if not values:
         raise ValueError("no values")
     if not 0 <= q <= 100:
@@ -18,7 +17,6 @@ def percentile(values: List[float], q: float) -> float:
     hi = min(lo + 1, len(ordered) - 1)
     frac = pos - lo
     return ordered[lo] + (ordered[hi] - ordered[lo]) * frac
-
 
 def measure_latency(
     predict: Callable, images: List, warmup: int = 2, repeats: int = 1
