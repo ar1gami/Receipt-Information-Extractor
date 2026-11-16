@@ -2,11 +2,11 @@
 
 Reads a photo of a receipt and returns the vendor, the date and the total as JSON.
 
-Two approaches are built and measured on the same held-out receipts. The baseline runs Tesseract OCR and pulls the fields out with hand-written rules. The second approach fine-tunes a small open vision-language model with LoRA so that it reads the image and writes the JSON directly. The comparison covers accuracy per field, latency and model size, including a quantized version of the fine-tuned model. Either approach can be served through a FastAPI service.
+Two approaches are built and measured on the same held out receipts. The baseline runs Tesseract OCR and pulls the fields out with hand written rules. The second approach fine tunes a small, open vision language model with LoRA so that it reads the image and writes the JSON directly. The comparison covers accuracy per field, latency and model size, including a quantized version of the fine tuned model. Either approach can be served through a FastAPI service.
 
 ## Results
 
-Test set: 347 receipts from the SROIE test split (the "SROIE datasetv2" copy on Kaggle), dates read day first. The fine-tuned models were trained on the 626 SROIE training receipts, 10 percent of which were held out for validation. With 347 receipts, each accuracy has an uncertainty of roughly plus or minus 5 points, so differences of one or two points are not meaningful.
+Test set: 347 receipts from the SROIE test split (the "SROIE datasetv2" copy on Kaggle), dates read day first. The fine tuned models were trained on the 626 SROIE training receipts, 10 percent of which were held out for validation. With 347 receipts, each accuracy has an uncertainty of roughly plus or minus 5 points, so differences of one or two points are not meaningful.
 
 | model | vendor | date | total | all fields | parse failures | median ms | p95 ms | size MB |
 |---|---|---|---|---|---|---|---|---|
@@ -16,7 +16,7 @@ Test set: 347 receipts from the SROIE test split (the "SROIE datasetv2" copy on 
 | fine-tuned, int8 | 80.1 | 91.6 | 88.5 | 66.6 | 0.0% | 5944 | 6454 | 606 |
 | fine-tuned, int4 | 75.2 | 88.8 | 81.8 | 55.6 | 0.0% | 2723 | 2995 | 424 |
 
-Setup: SmolVLM-500M-Instruct, LoRA rank 16 on the language model with the image encoder frozen (8.9 million trainable parameters, 1.7 percent), 3 epochs, learning rate 2e-4, effective batch size 8, float32 training, images resized to a longest side of 1536 pixels. Training took 3681 seconds (about 61 minutes) on one Tesla T4 on Kaggle. Validation loss fell from 0.091 to 0.078 to 0.072 over the three epochs. Evaluation used float16 on the same T4, and latency is the median over 50 receipts. OCR latency was not measured, so no speed comparison with OCR is made. The OCR row was scored on a different machine from the model rows.
+Setup: SmolVLM 500M Instruct, LoRA rank 16 on the language model with the image encoder frozen (8.9 million trainable parameters, 1.7 percent), 3 epochs, learning rate 2e-4, effective batch size 8, float32 training, images resized to a longest side of 1536 pixels. Training took 3681 seconds (about 61 minutes) on one Tesla T4 on Kaggle. Validation loss fell from 0.091 to 0.078 to 0.072 over the three epochs. Evaluation used float16 on the same T4, and latency is the median over 50 receipts. OCR latency was not measured, so no speed comparison with OCR is made. The OCR row was scored on a different machine from the model rows.
 
 What the table shows:
 
@@ -36,18 +36,18 @@ The table is produced by `scripts/compare.py` from the reports that `scripts/eva
 | vendor appears in training | 252 | 93.3 | 79.0 |
 | vendor not in training | 95 | 50.5 | 36.8 |
 
-So part of the vendor score is the model having learned shop names it saw in training. On receipts from shops it has not seen, all-fields accuracy is 36.8 percent. Nine test receipts also have exactly the same vendor, date and total as a training receipt (probably the same receipt scanned twice). Removing them changes the fine-tuned all-fields score from 67.4 to 66.6 percent.
+So part of the vendor score is the model having learned shop names it saw in training. On receipts from shops it has not seen, all fields accuracy is 36.8 percent. Nine test receipts also have exactly the same vendor, date and total as a training receipt (probably the same receipt scanned twice). Removing them changes the fine tuned all fields score from 67.4 to 66.6 percent.
 
 ### Error analysis
 
-The 136 wrong fields of the fine-tuned model (64 vendor, 41 total, 31 date) were grouped with simple rules that compare each answer with the label. I did not check each one against its image, so the groups are indicative.
+The 136 wrong fields of the fine tuned model (64 vendor, 41 total, 31 date) were grouped with simple rules that compare each answer with the label. I did not check each one against its image, so the groups are indicative.
 
 - Vendor: 35 are small spelling slips such as "PETROK" for "PETRON", 8 are names cut short or with address text added, 5 are heavily garbled, and 16 are a different name from the label, often the brand on the sign instead of the registered company name.
 - Total: 25 are a different amount from the label (13 smaller, 12 larger), which fits the model picking a subtotal, cash tendered or change line. 8 differ in one digit, 1 has two digits swapped, and 7 are off by a few cents, which may be rounding in the label.
-- Date: the day or month is wrong in 19 cases, the year in 4, 2 are a different date, 1 has day and month swapped, and 5 are not valid dates (for example a time of day or a cut-off year).
+- Date: the day or month is wrong in 19 cases, the year in 4, 2 are a different date, 1 has day and month swapped, and 5 are not valid dates (for example a time of day or a cut off year).
 - The int4 model has more errors in every field, with vendor names getting worse the most (86 wrong against 64).
 
-What I would try next: more training data with a wider range of vendors (the unseen-vendor gap is the largest weakness), a check that the extracted total is consistent with the other amounts on the receipt, a higher image resolution for small print, and reading some of the label disagreements against the images to see how many are label errors.
+Future goals: more training data with a wider range of vendors (the unseen vendor gap is the largest weakness), a check that the extracted total is consistent with the other amounts on the receipt, a higher image resolution for small print, and reading some of the label disagreements against the images to see how many are label errors.
 
 ## How it is evaluated
 
@@ -73,7 +73,7 @@ The command line tools:
 - `scripts/split_dataset.py` splits one data file into train.jsonl and test.jsonl.
 - `scripts/make_synthetic.py` writes a small set of synthetic receipts, used for smoke tests only.
 - `scripts/evaluate.py` scores the OCR baseline or a model on a data file, and can measure latency and model size.
-- `scripts/finetune.py` fine-tunes a vision-language model with LoRA.
+- `scripts/finetune.py` fine tunes a VLM with LoRA.
 - `scripts/merge_adapter.py` merges the LoRA weights back into the base model.
 - `scripts/compare.py` builds the results table from saved reports.
 - `scripts/error_report.py` builds a sheet of failures to sort by hand, then counts what you wrote.
@@ -88,7 +88,7 @@ sudo apt-get install tesseract-ocr      # or: brew install tesseract
 python -m pytest
 ```
 
-For fine-tuning on a GPU machine, install `requirements-train.txt` as well. On Colab or Kaggle, PyTorch is already installed, so install the other packages in that file only.
+For fine tuning on a GPU machine, install `requirements-train.txt` as well. On Colab or Kaggle, PyTorch is already installed, so install the other packages in that file only.
 
 ## Data format
 
@@ -136,7 +136,7 @@ To try a model on just a few receipts, add `--limit 5`. To read what it actually
 
 ## Running the GPU steps on Kaggle
 
-`notebooks/kaggle_finetune.ipynb` runs the whole fine-tuning part on a free Kaggle GPU: a check of the untouched model, a tiny training run, the full fine-tune, a merge, evaluation of the untouched, fine-tuned, 8-bit and 4-bit models, and the results table.
+`notebooks/kaggle_finetune.ipynb` runs the whole fine tuning part on a free Kaggle GPU: a check of the untouched model, a tiny training run, the full fine tune, a merge, evaluation of the untouched, fine tuned, 8 bit and 4 bit models, and the results table.
 
 1. Zip the project folder without its data folder, and upload the zip as a private Kaggle dataset.
 2. Create a notebook, upload kaggle_finetune.ipynb into it (File, Import Notebook), and attach two inputs: the zip dataset and the SROIE dataset ("SROIE datasetv2" by urbikn).
@@ -203,7 +203,7 @@ docker build -t receipt-extractor .
 docker run --rm -p 8080:8080 receipt-extractor
 ```
 
-The fine-tuned model on a CPU. First copy the adapter folder from the Kaggle run (the one with adapter_config.json in it) to `models/lora`, then:
+The fine tuned model on a CPU. First copy the adapter folder from the Kaggle run (the one with adapter_config.json in it) to `models/lora`, then:
 
 ```
 docker build --build-arg VARIANT=vlm -t receipt-extractor-vlm .
@@ -230,7 +230,7 @@ The response includes `latency_ms`, the time the prediction took.
 
 Things to know:
 
-- The image is CPU only, so the model is much slower than the 2.1 second median in the results table, which was measured on a GPU. In a container on one Windows laptop, the fine-tuned model took about 18 seconds per receipt: the same receipt sent three times took 18.7, 18.4 and 18.2 seconds. The CPU model and the number of cores given to Docker were not recorded, so treat this as one data point. The `latency_ms` in each response is the real number for your machine.
+- The image is CPU only, so the model is much slower than the 2.1 second median in the results table, which was measured on a GPU. In a container on one Windows laptop, the fine tuned model took about 18 seconds per receipt: the same receipt sent three times took 18.7, 18.4 and 18.2 seconds. The CPU model and the number of cores given to Docker were not recorded, so treat this as one data point. The `latency_ms` in each response is the real number for your machine.
 - On a CPU the model runs in float32, and the results table was measured in float16 on a GPU, so a few answers can differ from the table.
 - The model is 1015 MB in float16 and about twice that in memory in float32. Memory use of the container was not measured, so give Docker at least 6 GB.
 - Without `BASE_MODEL`, every new container downloads the base model again. Either build with `BASE_MODEL`, or keep the download between runs with `-v hf-cache:/opt/hf`.
@@ -244,7 +244,7 @@ Things to know:
 python -m pytest
 ```
 
-The tests cover normalization and scoring on many edge cases, the OCR rules, parsing of model output, the data tools, the API, and the Docker and CI files. The Dockerfile cannot be built in the tests, so its shell steps are run with stand-in commands, and its model loading step is run for real against a tiny model. When PyTorch, Transformers and PEFT are installed, they also fine-tune, save, merge, quantize, reload and serve tiny random models on a CPU (one built like LLaVA, one built from the classes SmolVLM uses), and run the Kaggle notebook on a fake Kaggle folder layout, which checks the model code and the notebook against the installed library versions. Those tests say nothing about how well a real model reads receipts. That is what the evaluation scripts are for.
+The tests cover normalization and scoring on many edge cases, the OCR rules, parsing of model output, the data tools, the API, and the Docker and CI files. The Dockerfile cannot be built in the tests, so its shell steps are run with stand in commands, and its model loading step is run for real against a tiny model. When PyTorch, Transformers and PEFT are installed, they also fine tune, save, merge, quantize, reload and serve tiny random models on a CPU (one built like LLaVA, one built from the classes SmolVLM uses), and run the Kaggle notebook on a fake Kaggle folder layout, which checks the model code and the notebook against the installed library versions. Those tests say nothing about how well a real model reads receipts. That is what the evaluation scripts are for.
 
 ## Limitations
 
